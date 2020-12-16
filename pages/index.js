@@ -1,14 +1,22 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
+import Head from 'next/head'
 
 import supabase from '../lib/supabase'
 
+import styles from '../styles/Home.module.scss'
+
 const Home = () => {
+	const messagesRef = useRef()
+	const inputRef = useRef()
+	
 	const [messages, setMessages] = useState([])
 	const [message, setMessage] = useState('')
 	
 	const sendMessage = useCallback(async event => {
 		event.preventDefault()
+		
 		setMessage('')
+		inputRef.current?.focus()
 		
 		const { error } = await supabase
 			.from('messages')
@@ -19,11 +27,22 @@ const Home = () => {
 		
 		setMessage(message)
 		alert(error.message)
-	}, [message, setMessage])
+	}, [inputRef, message, setMessage])
 	
 	const onMessageChange = useCallback(event => {
 		setMessage(event.target.value)
 	}, [setMessage])
+	
+	useEffect(() => {
+		inputRef.current?.focus()
+	}, [inputRef])
+	
+	useEffect(() => {
+		const element = messagesRef.current
+		
+		if (element)
+			element.scrollTop = element.scrollHeight
+	}, [messagesRef, messages])
 	
 	useEffect(() => {
 		supabase
@@ -50,15 +69,31 @@ const Home = () => {
 	}, [setMessages])
 	
 	return (
-		<>
-			{messages.map(message => (
-				<p key={message.id}>{message.body}</p>
-			))}
-			<form onSubmit={sendMessage}>
-				<input required value={message} onChange={onMessageChange} />
-				<button disabled={!message}>Send</button>
+		<div className={styles.root}>
+			<Head>
+				<title key="title">chat</title>
+			</Head>
+			<div ref={messagesRef} className={styles.messages}>
+				{messages.map(message => (
+					<p key={message.id} className={styles.message}>
+						{message.body}
+					</p>
+				))}
+			</div>
+			<form className={styles.form} onSubmit={sendMessage}>
+				<input
+					ref={inputRef}
+					className={styles.input}
+					required
+					placeholder="enter your message"
+					value={message}
+					onChange={onMessageChange}
+				/>
+				<button className={styles.button} disabled={!message}>
+					send
+				</button>
 			</form>
-		</>
+		</div>
 	)
 }
 
